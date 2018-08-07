@@ -26,15 +26,18 @@ prop_FillAndBlockFlush (Positive bound) ls oneExtra =
       isSuccess <- and <$> mapConcurrently (tryWriteBFQueue q) fillWith
       hasSpace <- or <$> mapConcurrently (tryWriteBFQueue q) leftOver
       len <- lengthBFQueue q
-      eLs <- race (writeBFQueue q oneExtra) (flushBFQueue q)
+      eLs <- race (writeBFQueue q oneExtra >> flushBFQueue q) (flushBFQueue q)
       return $
         conjoin
           [ counterexample "Queue wasn't fully filled up" isSuccess
           , counterexample "Left over was placed on the queue" (not hasSpace)
           , len === length fillWith
           , either
-              (\_ -> counterexample "Placed an element on the full queue concurrently" False)
-              (\ls' -> sort ls' === sort fillWith) eLs
+              (\o ->
+                 o === [oneExtra] .||.
+                 counterexample "Placed an element on the full queue concurrently" False)
+              (\ls' -> sort ls' === sort fillWith)
+              eLs
           ]
 
 
