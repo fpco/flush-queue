@@ -2,16 +2,17 @@
 module Main where
 
 import           Control.Concurrent.Async
+import           Control.Concurrent.BFQueue
 import           Control.Concurrent.MVar
 import           Control.Concurrent.STM
+import           Control.Concurrent.STM.TBFQueue
+import           Control.DeepSeq
 import           Control.Monad
 import           Data.Foldable
 import           Data.IORef
-import           Control.Concurrent.STM.TBFQueue
-import           Control.Concurrent.BFQueue
 import           System.CPUTime
-import           System.IO                      (BufferMode (LineBuffering),
-                                                 hSetBuffering, stdout)
+import           System.IO                       (BufferMode (LineBuffering),
+                                                  hSetBuffering, stdout)
 import           System.Time
 
 
@@ -26,8 +27,10 @@ fillFlushQueue :: Int -- ^ Queue bound
                -> IO [Int] -- ^ Queue flusher
                -> IO (Time, Time)
 fillFlushQueue bound n write flush = do
-  (_, fillTime) <- time $ replicateConcurrently_ n (writeQueueUsing write x)
-  (_, flushTime) <- time flush
+  ((), fillTime) <- time $ replicateConcurrently_ n (writeQueueUsing write x)
+  ((), flushTime) <- time $ do
+    res <- flush
+    res `deepseq` return ()
   return (fillTime, flushTime)
   where
     x = bound `div` n
@@ -38,11 +41,11 @@ runBench name runCycle = do
   let cycles = 30 :: Int
   putStrLn $ replicate 80 '-'
   putStrLn $ name ++ " (cycles " ++ show cycles ++ ")"
-  (tFill, _tFlush) <- unzip <$> mapM (const runCycle) [1..cycles]
+  (tFill, tFlush) <- unzip <$> mapM (const runCycle) [1..cycles]
   putStrLn "Average Fill:"
   putStrLn $ prettyTime $ avg tFill
-  -- putStrLn "Average Flush:"
-  -- putStrLn $ prettyTime $ avg tFlush
+  putStrLn "Average Flush:"
+  putStrLn $ prettyTime $ avg tFlush
 
 
 -- | A rundown of a benchmark:
@@ -54,31 +57,70 @@ main = do
   hSetBuffering stdout LineBuffering
   let bound = 100000
       threads = 16
-      runFlushTBQueue = do
-        q <- newTBQueueIO bound
-        fillFlushQueue bound threads (atomically . writeTBQueue q) (atomically $ flushTBQueue q)
-      runFlushSQueue = do
-        q <- newSQueue bound
-        fillFlushQueue bound threads (writeSQueue q) (flushSQueue q)
-      runFlushTBFQueue = do
-        q <- atomically $ newTBFQueue bound
-        fillFlushQueue
-          bound
-          threads
-          (atomically . void . tryWriteTBFQueue q)
-          (atomically $ flushTBFQueue q)
       runFlushBFQueueMVar = do
         q <- newBFQueueMVar bound
         fillFlushQueue bound threads (void . writeBFQueueMVar q) (flushBFQueueMVar q)
+      runFlushSQueue = do
+        q <- newSQueue bound
+        fillFlushQueue bound threads (writeSQueue q) (flushSQueue q)
+      runFlushTBQueue = do
+        q <- newTBQueueIO bound
+        fillFlushQueue bound threads (atomically . writeTBQueue q) (atomically $ flushTBQueue q)
+      runFlushTBFQueue = do
+        q <- atomically $ newTBFQueue bound
+        fillFlushQueue bound threads (atomically . writeTBFQueue q) (atomically $ flushTBFQueue q)
       runFlushBFQueue = do
         q <- newBFQueue bound
         fillFlushQueue bound threads (writeBFQueue q) (flushBFQueue q)
+  putStrLn "==== Fill and Flush all ===="
   runBench "BFQueueMVar (MVar + no blocking)" runFlushBFQueueMVar
   runBench "SQueue (IORef + MVar for blocking)" runFlushSQueue
   runBench "STM TBQueue" runFlushTBQueue
   runBench "STM TBFQueue" runFlushTBFQueue
   runBench "BFQueue (IORef + MVar)" runFlushBFQueue
+  let runTakeTBQueue = do
+        q <- newTBQueueIO bound
+        fillFlushQueue
+          bound
+          threads
+          (atomically . void . tryWriteTBQueue q)
+          (atomically $ takeTBQueue (bound `div` 2) q)
+      runTakeTBFQueue = do
+        q <- atomically $ newTBFQueue bound
+        fillFlushQueue
+          bound
+          threads
+          (atomically . void . tryWriteTBFQueue q)
+          (atomically $ takeTBFQueue (bound `div` 2) q)
+      runTakeBFQueue = do
+        q <- newBFQueue bound
+        fillFlushQueue bound threads (void . tryWriteBFQueue q) (takeBFQueue (bound `div` 2) q)
+  putStrLn "==== Try Fill and Take half ===="
+  runBench "STM TBQueue" runTakeTBQueue
+  runBench "STM TBFQueue" runTakeTBFQueue
+  runBench "BFQueue (IORef + MVar)" runTakeBFQueue
 
+
+-----------------------------------
+-- Missing STM TBQueue functions --
+-----------------------------------
+
+tryWriteTBQueue :: TBQueue a -> a -> STM Bool
+tryWriteTBQueue tbQueue x =
+  orElse (writeTBQueue tbQueue x >> return True) (isFullTBQueue tbQueue >>= check >> return False)
+
+
+takeTBQueue :: (Ord a1, Num a1) => a1 -> TBQueue a2 -> STM [a2]
+takeTBQueue i tbQueue
+  | i <= 0 = return []
+  | otherwise = do
+    let tryReadN n acc =
+          tryReadTBQueue tbQueue >>= \case
+            Just v
+              | n < i -> tryReadN (n + 1) (v : acc)
+            Just v -> return $ reverse (v : acc)
+            _ -> return $ reverse acc
+    tryReadN 1 []
 
 ---------------------------------
 -- Alternative implementations --

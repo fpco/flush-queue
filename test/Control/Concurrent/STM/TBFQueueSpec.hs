@@ -37,9 +37,44 @@ prop_FillAndBlockFlush (Positive bound) ls oneExtra =
               (\ls' -> sort ls' === sort fillWith) eLs
           ]
 
+prop_FillReadTakeNonBlocking :: NonEmptyList Int -> Property
+prop_FillReadTakeNonBlocking (NonEmpty ls) = monadicIO $ do
+  run $ do
+    let x:xs = ls
+        i = length xs
+    q <- newTBFQueueIO (i + 1)
+    mapM_ (atomically . writeTBFQueue q) (x:xs)
+    x' <- atomically $ readTBFQueue q
+    xs' <- atomically $ takeTBFQueue i q
+    return (x === x' .&&. xs === xs')
+
+
+prop_FillReadTakeBlocking :: NonEmptyList Int -> Int -> Property
+prop_FillReadTakeBlocking (NonEmpty ls) y = monadicIO $ do
+  run $ do
+    let x:xs = ls
+        i = length xs
+    q <- newTBFQueueIO (i + 1)
+    mapM_ (atomically . writeTBFQueue q) (x:xs)
+    ((), x') <- concurrently (atomically $ writeTBFQueue q y) (atomically $ readTBFQueue q)
+    xs' <- atomically $ takeTBFQueue i q
+    y' <- atomically $ readTBFQueue q
+    return (x === x' .&&. xs === xs' .&&. y === y')
+
+
+prop_PushPopConcurrently :: Int -> Positive Int -> Property
+prop_PushPopConcurrently x (Positive bound) = monadicIO $ do
+  run $ do
+    q <- newTBFQueueIO bound
+    (x', ()) <- concurrently (atomically $ readTBFQueue q) (atomically $ writeTBFQueue q x)
+    return (x === x')
+
 
 spec :: Spec
 spec = do
   describe "Fill+Flush" $ do
     it "FillFlushNonBlocking" $ property prop_FillFlushNonBlocking
     it "FillAndBlockFlush" $ property prop_FillAndBlockFlush
+    it "FillReadTakeNonBlocking" $ property prop_FillReadTakeNonBlocking
+    it "FillReadTakeBlocking" $ property prop_FillReadTakeBlocking
+    it "PushPopConcurrently" $ property prop_PushPopConcurrently

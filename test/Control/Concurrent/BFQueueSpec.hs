@@ -40,9 +40,20 @@ prop_FillAndBlockFlush (Positive bound) ls oneExtra =
               eLs
           ]
 
+prop_FillReadTakeNonBlocking :: NonEmptyList Int -> Property
+prop_FillReadTakeNonBlocking (NonEmpty ls) = monadicIO $ do
+  run $ do
+    let x:xs = ls
+        i = length xs
+    q <- newBFQueue (i + 1)
+    mapM_ (writeBFQueue q) (x:xs)
+    [x'] <- takeBFQueue 1 q
+    xs' <- takeBFQueue i q
+    return (x === x' .&&. xs === xs')
 
 spec :: Spec
 spec = do
   describe "Fill+Flush" $ do
     it "FillFlushNonBlocking" $ property prop_FillFlushNonBlocking
     it "FillAndBlockFlush" $ property prop_FillAndBlockFlush
+    it "FillReadTakeNonBlocking" $ property prop_FillReadTakeNonBlocking
