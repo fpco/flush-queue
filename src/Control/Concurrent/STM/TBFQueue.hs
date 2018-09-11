@@ -58,7 +58,7 @@ tryWriteTBFQueue (TBFQueue bQueueTVar) x = do
     Just newQueue -> writeTVar bQueueTVar newQueue >> return True
     Nothing      -> return False
 
--- | /O(1)/ - Pop an element from the queue. Will block if queue is empty.
+-- | /Amortized O(1)/ - Pop an element from the queue. Will block if queue is empty.
 readTBFQueue :: TBFQueue a -> STM a
 readTBFQueue (TBFQueue bQueueTVar) = do
   bQueue <- readTVar bQueueTVar
