@@ -50,7 +50,7 @@ benchmark bench
   main-is:             Benchmark.hs
   ghc-options:         -Wall -threaded -O2 -rtsopts -with-rtsopts=-N
   build-depends:       base
-                     , stm
+                     , stm >= 2.4.5
                      , async
                      , flush-queue
                      , old-time

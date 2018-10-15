@@ -4,8 +4,10 @@ module Main where
 import           Control.Concurrent.Async
 import           Control.Concurrent.BFQueue
 import           Control.Concurrent.MVar
-import           Control.Concurrent.STM
+import           Control.Concurrent.STM          (STM, atomically, check,
+                                                  orElse)
 import           Control.Concurrent.STM.TBFQueue
+import           Control.Concurrent.STM.TBQueue
 import           Control.DeepSeq
 import           Control.Monad
 import           Data.Foldable
