@@ -49,7 +49,8 @@ prop_FillReadTakeNonBlocking (NonEmpty ls) = monadicIO $ do
     mapM_ (writeBFQueue q) (x:xs)
     [x'] <- takeBFQueue 1 q
     xs' <- takeBFQueue i q
-    return (x === x' .&&. xs === xs')
+    isEmpty <- isEmptyBFQueue q
+    return (x === x' .&&. xs === xs' .&&. counterexample "Queue is non-empty" isEmpty)
 
 spec :: Spec
 spec = do

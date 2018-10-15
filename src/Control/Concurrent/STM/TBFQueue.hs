@@ -20,6 +20,7 @@ module Control.Concurrent.STM.TBFQueue
   , takeTBFQueue
   , flushTBFQueue
   , lengthTBFQueue
+  , isEmptyTBFQueue
   ) where
 
 import Control.Concurrent.BQueue
@@ -87,3 +88,8 @@ takeTBFQueue i (TBFQueue bQueueTVar) = do
 -- | /O(1)/ - Extract number of elements that is currently on the queue
 lengthTBFQueue :: TBFQueue a -> STM Int
 lengthTBFQueue (TBFQueue bQueueTVar) = lengthBQueue <$> readTVar bQueueTVar
+
+
+-- | /O(1)/ - Check if queue is empty
+isEmptyTBFQueue :: TBFQueue a -> STM Bool
+isEmptyTBFQueue = fmap (==0) . lengthTBFQueue

@@ -46,7 +46,8 @@ prop_FillReadTakeNonBlocking (NonEmpty ls) = monadicIO $ do
     mapM_ (atomically . writeTBFQueue q) (x:xs)
     x' <- atomically $ readTBFQueue q
     xs' <- atomically $ takeTBFQueue i q
-    return (x === x' .&&. xs === xs')
+    isEmpty <- atomically $ isEmptyTBFQueue q
+    return (x === x' .&&. xs === xs' .&&. counterexample "Queue is non-empty" isEmpty)
 
 
 prop_FillReadTakeBlocking :: NonEmptyList Int -> Int -> Property

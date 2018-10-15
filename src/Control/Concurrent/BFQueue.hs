@@ -19,6 +19,7 @@ module Control.Concurrent.BFQueue
   , takeBFQueue
   , flushBFQueue
   , lengthBFQueue
+  , isEmptyBFQueue
   ) where
 
 import Data.Atomics (atomicModifyIORefCAS)
@@ -83,3 +84,8 @@ takeBFQueue i (BFQueue bQueueIORef)
 -- | /O(1)/ - Extract number of elements that is currently on the queue
 lengthBFQueue :: BFQueue a -> IO Int
 lengthBFQueue (BFQueue bQueueIORef) = lengthBQueue . fst <$> readIORef bQueueIORef
+
+
+-- | /O(1)/ - Check if queue is empty
+isEmptyBFQueue :: BFQueue a -> IO Bool
+isEmptyBFQueue = fmap (==0) . lengthBFQueue

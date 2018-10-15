@@ -1,5 +1,5 @@
 name:           flush-queue
-version:        0.1.0.0
+version:        0.1.1.0
 description:    Please see the README on GitHub at <https://github.com/lehins/flush-queue#readme>
 homepage:       https://github.com/lehins/flush-queue#readme
 bug-reports:    https://github.com/lehins/flush-queue/issues
@@ -22,8 +22,7 @@ library
   exposed-modules: Control.Concurrent.BFQueue
                    Control.Concurrent.STM.TBFQueue
   other-modules: Control.Concurrent.BQueue
-  hs-source-dirs:
-      src
+  hs-source-dirs: src
   build-depends: base >=4.7 && <5
                , stm
                , atomic-primops
@@ -35,8 +34,7 @@ test-suite tests
   main-is: Spec.hs
   other-modules: Control.Concurrent.BFQueueSpec
                , Control.Concurrent.STM.TBFQueueSpec
-  hs-source-dirs:
-      test
+  hs-source-dirs: test
   ghc-options:  -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends: base >=4.7 && <5
                , async
