@@ -12,7 +12,7 @@ import Test.QuickCheck.Monadic
 prop_FillFlushNonBlocking :: [[Int]] -> Property
 prop_FillFlushNonBlocking lss = monadicIO $ do
   ls <- run $ do
-    q <- newBFQueue (sum (map length lss))
+    q <- newBFQueue (fromIntegral (sum (map length lss)))
     mapConcurrently_ (foldMap (writeBFQueue q)) lss
     flushBFQueue q
   return (sort ls === sort (concat lss))
@@ -22,7 +22,7 @@ prop_FillAndBlockFlush (Positive bound) ls oneExtra =
   bound < length ls ==> monadicIO $ do
     let (fillWith, leftOver) = splitAt bound ls
     run $ do
-      q <- newBFQueue bound
+      q <- newBFQueue $ fromIntegral bound
       isSuccess <- and <$> mapConcurrently (tryWriteBFQueue q) fillWith
       hasSpace <- or <$> mapConcurrently (tryWriteBFQueue q) leftOver
       len <- lengthBFQueue q
@@ -31,7 +31,7 @@ prop_FillAndBlockFlush (Positive bound) ls oneExtra =
         conjoin
           [ counterexample "Queue wasn't fully filled up" isSuccess
           , counterexample "Left over was placed on the queue" (not hasSpace)
-          , len === length fillWith
+          , fromIntegral len === length fillWith
           , either
               (\o ->
                  o === [oneExtra] .||.
@@ -44,7 +44,7 @@ prop_FillReadTakeNonBlocking :: NonEmptyList Int -> Property
 prop_FillReadTakeNonBlocking (NonEmpty ls) = monadicIO $ do
   run $ do
     let x:xs = ls
-        i = length xs
+        i = fromIntegral $ length xs
     q <- newBFQueue (i + 1)
     mapM_ (writeBFQueue q) (x:xs)
     [x'] <- takeBFQueue 1 q

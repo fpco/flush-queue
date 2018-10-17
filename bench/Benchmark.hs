@@ -69,10 +69,10 @@ main = do
         q <- newTBQueueIO bound
         fillFlushQueue bound threads (atomically . writeTBQueue q) (atomically $ flushTBQueue q)
       runFlushTBFQueue = do
-        q <- atomically $ newTBFQueue bound
+        q <- atomically $ newTBFQueue $ fromIntegral bound
         fillFlushQueue bound threads (atomically . writeTBFQueue q) (atomically $ flushTBFQueue q)
       runFlushBFQueue = do
-        q <- newBFQueue bound
+        q <- newBFQueue $ fromIntegral bound
         fillFlushQueue bound threads (writeBFQueue q) (flushBFQueue q)
   putStrLn "==== Fill and Flush all ===="
   runBench "BFQueueMVar (MVar + no blocking)" runFlushBFQueueMVar
@@ -88,15 +88,19 @@ main = do
           (atomically . void . tryWriteTBQueue q)
           (atomically $ takeTBQueue (bound `div` 2) q)
       runTakeTBFQueue = do
-        q <- atomically $ newTBFQueue bound
+        q <- atomically $ newTBFQueue $ fromIntegral bound
         fillFlushQueue
           bound
           threads
           (atomically . void . tryWriteTBFQueue q)
-          (atomically $ takeTBFQueue (bound `div` 2) q)
+          (atomically $ takeTBFQueue (fromIntegral bound `div` 2) q)
       runTakeBFQueue = do
-        q <- newBFQueue bound
-        fillFlushQueue bound threads (void . tryWriteBFQueue q) (takeBFQueue (bound `div` 2) q)
+        q <- newBFQueue $ fromIntegral bound
+        fillFlushQueue
+          bound
+          threads
+          (void . tryWriteBFQueue q)
+          (takeBFQueue (fromIntegral bound `div` 2) q)
   putStrLn "==== Try Fill and Take half ===="
   runBench "STM TBQueue" runTakeTBQueue
   runBench "STM TBFQueue" runTakeTBFQueue

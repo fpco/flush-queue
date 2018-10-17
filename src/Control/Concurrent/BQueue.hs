@@ -1,4 +1,3 @@
-
 {-# LANGUAGE NamedFieldPuns #-}
 module Control.Concurrent.BQueue
   ( BQueue

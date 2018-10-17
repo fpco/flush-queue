@@ -12,7 +12,7 @@ import Test.QuickCheck.Monadic
 prop_FillFlushNonBlocking :: [[Int]] -> Property
 prop_FillFlushNonBlocking lss = monadicIO $ do
   ls <- run $ do
-    q <- newTBFQueueIO (sum (map length lss))
+    q <- newTBFQueueIO (fromIntegral (sum (map length lss)))
     mapConcurrently_ (foldMap (atomically . writeTBFQueue q)) lss
     atomically $ flushTBFQueue q
   return (sort ls === sort (concat lss))
@@ -22,7 +22,7 @@ prop_FillAndBlockFlush (Positive bound) ls oneExtra =
   bound < length ls ==> monadicIO $ do
     let (fillWith, leftOver) = splitAt bound ls
     run $ do
-      q <- atomically $ newTBFQueue bound
+      q <- atomically $ newTBFQueue $ fromIntegral bound
       isSuccess <- and <$> mapConcurrently (atomically . tryWriteTBFQueue q) fillWith
       hasSpace <- or <$> mapConcurrently (atomically . tryWriteTBFQueue q) leftOver
       len <- atomically $ lengthTBFQueue q
@@ -31,7 +31,7 @@ prop_FillAndBlockFlush (Positive bound) ls oneExtra =
         conjoin
           [ counterexample "Queue wasn't fully filled up" isSuccess
           , counterexample "Left over was placed on the queue" (not hasSpace)
-          , len === length fillWith
+          , fromIntegral len === length fillWith
           , either
               (\_ -> counterexample "Placed an element on the full queue concurrently" False)
               (\ls' -> sort ls' === sort fillWith) eLs
@@ -41,7 +41,7 @@ prop_FillReadTakeNonBlocking :: NonEmptyList Int -> Property
 prop_FillReadTakeNonBlocking (NonEmpty ls) = monadicIO $ do
   run $ do
     let x:xs = ls
-        i = length xs
+        i = fromIntegral $ length xs
     q <- newTBFQueueIO (i + 1)
     mapM_ (atomically . writeTBFQueue q) (x:xs)
     x' <- atomically $ readTBFQueue q
@@ -54,7 +54,7 @@ prop_FillReadTakeBlocking :: NonEmptyList Int -> Int -> Property
 prop_FillReadTakeBlocking (NonEmpty ls) y = monadicIO $ do
   run $ do
     let x:xs = ls
-        i = length xs
+        i = fromIntegral $ length xs
     q <- newTBFQueueIO (i + 1)
     mapM_ (atomically . writeTBFQueue q) (x:xs)
     ((), x') <- concurrently (atomically $ writeTBFQueue q y) (atomically $ readTBFQueue q)
@@ -63,22 +63,22 @@ prop_FillReadTakeBlocking (NonEmpty ls) y = monadicIO $ do
     return (x === x' .&&. xs === xs' .&&. y === y')
 
 
-prop_FillTakeNonBlocking :: [Int] -> Int -> Property
-prop_FillTakeNonBlocking xs i =
+prop_FillTakeNonBlocking :: [Int] -> NonNegative Int -> Property
+prop_FillTakeNonBlocking xs (NonNegative i) =
   monadicIO $ do
     run $ do
       let n = length xs
-      q <- newTBFQueueIO n
+      q <- newTBFQueueIO $ fromIntegral n
       mapM_ (atomically . writeTBFQueue q) xs
-      xs1 <- atomically $ takeTBFQueue i q
-      xs2 <- atomically $ takeTBFQueue (n - i) q
+      xs1 <- atomically $ takeTBFQueue (fromIntegral i) q
+      xs2 <- atomically $ takeTBFQueue (fromIntegral (max 0 (n - i))) q
       return (xs === xs1 ++ xs2)
 
 
 prop_PushPopConcurrently1 :: Int -> Positive Int -> Property
 prop_PushPopConcurrently1 x (Positive bound) = monadicIO $ do
   run $ do
-    q <- newTBFQueueIO bound
+    q <- newTBFQueueIO $ fromIntegral bound
     (x', ()) <- concurrently (atomically $ readTBFQueue q) (atomically $ writeTBFQueue q x)
     return (x === x')
 
@@ -86,7 +86,7 @@ prop_PushPopConcurrentlyMany :: [Int] -> Positive Int -> Property
 prop_PushPopConcurrentlyMany xs (Positive bound) =
   monadicIO $ do
     run $ do
-      q <- newTBFQueueIO bound
+      q <- newTBFQueueIO $ fromIntegral bound
       (xs', ()) <-
         concurrently
           (mapM (const (atomically (readTBFQueue q))) xs)
