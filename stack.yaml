@@ -1,5 +1,4 @@
 resolver: lts-12.26
 packages:
 - .
-extra-deps:
-- stm-2.5.0.0@sha256:1fb8bd117550d560d1b33a6404e27fdb090e70921e0f6434722cdbbce20d8256
+extra-deps: []
