@@ -1,5 +1,5 @@
 name:           flush-queue
-version:        0.1.2.0
+version:        1.0.0
 description:    Please see the README on GitHub at <https://github.com/fpco/flush-queue#readme>
 homepage:       https://github.com/fpco/flush-queue#readme
 bug-reports:    https://github.com/fpco/flush-queue/issues
@@ -23,7 +23,7 @@ library
                    Control.Concurrent.STM.TBFQueue
   other-modules: Control.Concurrent.BQueue
   hs-source-dirs: src
-  build-depends: base >=4.7 && <5
+  build-depends: base >=4.8 && <5
                , stm
                , atomic-primops
                , containers
@@ -36,8 +36,8 @@ test-suite tests
                , Control.Concurrent.STM.TBFQueueSpec
   hs-source-dirs: test
   ghc-options:  -Wall -threaded -rtsopts -with-rtsopts=-N
-  build-depends: base >=4.7 && <5
-               , async
+  build-depends: base >=4.9 && <5
+               , async >= 2.1.1
                , stm
                , flush-queue
                , QuickCheck
@@ -51,7 +51,7 @@ benchmark bench
   ghc-options:         -Wall -threaded -O2 -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , stm >= 2.4.5
-                     , async
+                     , async >= 2.1.1
                      , flush-queue
                      , old-time
                      , deepseq

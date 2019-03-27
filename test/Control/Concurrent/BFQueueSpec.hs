@@ -23,13 +23,13 @@ prop_FillAndBlockFlush (Positive bound) ls oneExtra =
     let (fillWith, leftOver) = splitAt bound ls
     run $ do
       q <- newBFQueue $ fromIntegral bound
-      isSuccess <- and <$> mapConcurrently (tryWriteBFQueue q) fillWith
+      isSuccess' <- and <$> mapConcurrently (tryWriteBFQueue q) fillWith
       hasSpace <- or <$> mapConcurrently (tryWriteBFQueue q) leftOver
       len <- lengthBFQueue q
       eLs <- race (writeBFQueue q oneExtra >> flushBFQueue q) (flushBFQueue q)
       return $
         conjoin
-          [ counterexample "Queue wasn't fully filled up" isSuccess
+          [ counterexample "Queue wasn't fully filled up" isSuccess'
           , counterexample "Left over was placed on the queue" (not hasSpace)
           , fromIntegral len === length fillWith
           , either
@@ -41,7 +41,7 @@ prop_FillAndBlockFlush (Positive bound) ls oneExtra =
           ]
 
 prop_FillReadTakeNonBlocking :: NonEmptyList Int -> Property
-prop_FillReadTakeNonBlocking (NonEmpty ls) = monadicIO $ do
+prop_FillReadTakeNonBlocking (NonEmpty ls) = monadicIO $
   run $ do
     let x:xs = ls
         i = fromIntegral $ length xs
@@ -53,7 +53,7 @@ prop_FillReadTakeNonBlocking (NonEmpty ls) = monadicIO $ do
     return (x === x' .&&. xs === xs' .&&. counterexample "Queue is non-empty" isEmpty)
 
 spec :: Spec
-spec = do
+spec =
   describe "Fill+Flush" $ do
     it "FillFlushNonBlocking" $ property prop_FillFlushNonBlocking
     it "FillAndBlockFlush" $ property prop_FillAndBlockFlush

@@ -1,0 +1,6 @@
+resolver: lts-3.22
+packages:
+- .
+extra-deps:
+- async-2.2.1@sha256:61789382f449a02f827e70a029ba8f24a223b9c6b3792bb094fbd41ee360e851
+- atomic-primops-0.8.2@sha256:8c7150a323d99d215594a829838355a3d0b47f26472b0e7c8e9268d1096aac3d
