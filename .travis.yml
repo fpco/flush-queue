@@ -19,7 +19,7 @@ cache:
   - $HOME/.ghc
   #- $HOME/.cabal
   - $HOME/.stack
-  - $TRAVIS_BUILD_DIR/scheduler/.stack-work
+  - $TRAVIS_BUILD_DIR/.stack-work
   timeout: 360
 
 # The different configurations we want to test. We have BUILD=cabal which uses
@@ -213,13 +213,12 @@ script:
   set -ex
   case "$BUILD" in
     stack)
-      stack $ARGS test scheduler:tests scheduler:doctests --haddock --no-haddock-deps
+      stack $ARGS test--haddock --no-haddock-deps
       ;;
     cabal)
 
       ORIGDIR=$(pwd)
 
-      cd scheduler
       cabal check || [ "$CABALVER" == "1.16" ]
       cabal install --only-dependencies --enable-tests --force-reinstalls --reorder-goals --max-backjumps=-1 $CABALARGS
       cabal configure --enable-tests
