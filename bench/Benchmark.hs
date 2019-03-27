@@ -66,7 +66,7 @@ main = do
         q <- newSQueue bound
         fillFlushQueue bound threads (writeSQueue q) (flushSQueue q)
       runFlushTBQueue = do
-        q <- newTBQueueIO bound
+        q <- newTBQueueIO $ fromIntegral bound
         fillFlushQueue bound threads (atomically . writeTBQueue q) (atomically $ flushTBQueue q)
       runFlushTBFQueue = do
         q <- atomically $ newTBFQueue $ fromIntegral bound
@@ -81,7 +81,7 @@ main = do
   runBench "STM TBFQueue" runFlushTBFQueue
   runBench "BFQueue (IORef + MVar)" runFlushBFQueue
   let runTakeTBQueue = do
-        q <- newTBQueueIO bound
+        q <- newTBQueueIO $ fromIntegral bound
         fillFlushQueue
           bound
           threads
