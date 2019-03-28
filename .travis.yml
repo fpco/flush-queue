@@ -100,7 +100,7 @@ matrix:
       apt:
         packages: [libgmp-dev]
 
-  - env: BUILD=stack ARGS="--resolver lts-9.21"
+  - env: BUILD=stack ARGS="--resolver lts-9.21 --stack-yaml stack.older.yaml"
     compiler: ": #stack GHC-8.0.2 (lts-9.21)"
     addons:
       apt:
@@ -138,7 +138,7 @@ matrix:
         packages: [libgmp-dev]
 
   # Build on macOS in addition to Linux
-  - env: BUILD=stack ARGS="--resolver lts-9.21"
+  - env: BUILD=stack ARGS="--resolver lts-9.21 --stack-yaml stack.older.yaml"
     compiler: ": #stack GHC-8.0.2 (lts-9.21)"
     os: osx
 
