@@ -41,16 +41,16 @@ prop_FillAndBlockFlush (Positive bound) ls oneExtra =
           ]
 
 prop_FillReadTakeNonBlocking :: NonEmptyList Int -> Property
-prop_FillReadTakeNonBlocking (NonEmpty ls) = monadicIO $
+prop_FillReadTakeNonBlocking (NonEmpty xs) =
+  monadicIO $
   run $ do
-    let x:xs = ls
-        i = fromIntegral $ length xs
+    let i = fromIntegral $ length xs - 1
     q <- newBFQueue (i + 1)
-    mapM_ (writeBFQueue q) (x:xs)
+    mapM_ (writeBFQueue q) xs
     [x'] <- takeBFQueue 1 q
     xs' <- takeBFQueue i q
     isEmpty <- isEmptyBFQueue q
-    return (x === x' .&&. xs === xs' .&&. counterexample "Queue is non-empty" isEmpty)
+    return (head xs === x' .&&. tail xs === xs' .&&. counterexample "Queue is non-empty" isEmpty)
 
 spec :: Spec
 spec =
